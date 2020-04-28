@@ -1,5 +1,5 @@
 ## cqhttp.WebSocketReverse.NETCore
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/cqbef/cqhttp.WebSocketReverse.NETCore/PublicSDK/deploy?style=for-the-badge)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/cqbef/cqhttp.WebSocketReverse.NETCore/PublicSDK?style=for-the-badge)
 ![NugetVersion](https://img.shields.io/nuget/v/cqhttp.WebSocketReverse.NETCore?style=for-the-badge)
 ![NugetDownload](https://img.shields.io/nuget/dt/cqhttp.WebSocketReverse.NETCore?style=for-the-badge)
 
