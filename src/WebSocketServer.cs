@@ -84,10 +84,10 @@ namespace cqhttp.WebSocketReverse.NETCore
             this.SelfId = selfId;
         }
     }
-    public class ReverseWS : IDisposable
+    public class WebSocketServer : IDisposable
     {
         public delegate Task AsyncEventHandler<TEventArgs>(object sender, TEventArgs e) where TEventArgs : EventArgs;
-        private readonly WebSocketServer Server = null;
+        private readonly Fleck.WebSocketServer Server = null;
         public bool isHardAuth = false;
         public ConcurrentDictionary<string, ConnectionData> ConnectionBinding = new ConcurrentDictionary<string, ConnectionData>();
         public event AsyncEventHandler<AuthorizationEventArgs> OnAuthorization;
@@ -96,9 +96,9 @@ namespace cqhttp.WebSocketReverse.NETCore
         public event AsyncEventHandler<MessageEventArgs> OnReceiveMessage;
         public event AsyncEventHandler<WSBaseEventArgs> OnPong;
         public event AsyncEventHandler<ErrorEventArgs> OnError;
-        public ReverseWS(string location)
+        public WebSocketServer(string location)
         {
-            Server = new WebSocketServer(location);
+            Server = new Fleck.WebSocketServer(location);
             Server.Start(socket =>
             {
                 socket.OnPong = async (rcnb) =>
@@ -175,7 +175,7 @@ namespace cqhttp.WebSocketReverse.NETCore
                 };
             });
         }
-        ~ReverseWS()
+        ~WebSocketServer()
         {
             Dispose();
         }

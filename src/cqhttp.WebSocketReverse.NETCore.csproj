@@ -7,8 +7,8 @@
     <Authors>cqbef</Authors>
     <Company></Company>
     <Product></Product>
-	<Version>1.0.0</Version>
-    <Description>基於CQHTTP插件的反向WebSocket通道</Description>
+	<Version>1.0.1</Version>
+    <Description>基於CQHTTP插件的反向WebSocket通道提供服务端SDK层级的封装</Description>
     <Copyright>GPL-3.0</Copyright>
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>

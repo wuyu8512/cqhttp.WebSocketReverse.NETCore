@@ -15,28 +15,28 @@ CqHttpApi.Timeout = TimeSpan.FromSeconds(10);
 
 rws.OnAuthorization += async (s, e) =>
 {
-	await Task.Run(() =>
-	{
-		Debug.WriteLine(e.Connection.WebSocketConnectionInfo.ClientIpAddress);
-		e.Allow();
-	});
+   await Task.Run(() =>
+   {
+      Debug.WriteLine(e.Connection.WebSocketConnectionInfo.ClientIpAddress);
+      e.Allow();
+   });
 };
 rws.OnReceiveMessage += async (s, e) =>
 {
-	await parse.Parse(s, e);
+   await parse.Parse(s, e);
 };
 parse.OnPrivateMessage += async (n, b) =>
 {
-	var vipinfo = await b.Source.GetVipInfo();
-	if(vipinfo.VipLevel == "普通用户")
-	{
-		await b.Source.Replay(b.Message);
-	}else
-	{
-		long qqId = 123456789;
-		int messageId = await b.Source.SendPrivateMessage(qqId,$"{b.Sender.NickName}({b.UserId})对你说:{b.Message}");
-		if(messageId>0)await b.Source.Replay("已传达消息到主人");
-	}
+   var vipinfo = await b.Source.GetVipInfo();
+   if(vipinfo.VipLevel == "普通用户")
+   {
+      await b.Source.Replay(b.Message);
+   }else
+   {
+      long qqId = 123456789;
+      int messageId = await b.Source.SendPrivateMessage(qqId,$"{b.Sender.NickName}({b.UserId})对你说:{b.Message}");
+      if(messageId>0)await b.Source.Replay("已传达消息到主人");
+   }
 };
 
 ```
