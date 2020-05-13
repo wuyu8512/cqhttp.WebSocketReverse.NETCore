@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="cqhttp.WebSocketReverse.NETCore" Version="1.1.0" />
+    <ProjectReference Include="..\..\src\cqhttp.WebSocketReverse.NETCore.csproj" />
   </ItemGroup>
 
 </Project>

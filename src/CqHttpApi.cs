@@ -970,20 +970,22 @@ namespace cqhttp.WebSocketReverse.NETCore
         {
             string echo = $"~{message.Task}@{Guid.NewGuid()}";
             if (IsEnableCallbackLimit) 
-            { 
+            {
                 if (MaximumWait > ActionResource.Operations.Count)
                 {
                     SpinWait.SpinUntil(()=> ActionResource.Operations.Count() < MaximumWait);
                 }
             }
-            ActionResource.Operations.TryAdd(echo, new TaskCompletionSource<ResponseResource>());
-            var api = source.ConnectionData.RoleAndConnections.TryGetValue("API", out Connection conn);
-            if (api)
+            if (ActionResource.Operations.TryAdd(echo, new TaskCompletionSource<ResponseResource>()))
             {
-                message.Echo = echo;
-                string jsonString = JsonSerializer.Serialize(message, new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Default });
-                await conn.Send(jsonString);
-                return await GetResult(echo, Timeout);
+                var api = source.ConnectionData.RoleAndConnections.TryGetValue("API", out Connection conn);
+                if (api)
+                {
+                    message.Echo = echo;
+                    string jsonString = JsonSerializer.Serialize(message, new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Default });
+                    await conn.Send(jsonString);
+                    return await GetResult(echo, Timeout);
+                }
             }
             return null;
         }
