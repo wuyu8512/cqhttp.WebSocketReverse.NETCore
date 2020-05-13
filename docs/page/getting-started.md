@@ -5,7 +5,7 @@
 
 #### CQHTTP设置
 
-假定你已经下载CQHTTP插件并放置在相应位置及启用应用后,
+假定你已经下载[CQHTTP插件](https://github.com/richardchien/coolq-http-api/releases/download/v4.15.0/io.github.richardchien.coolqhttpapi.cpk)并放置在相应位置及启用应用后,
 你可以开始建立全局设置於<kbd>data\app\io.github.richardchien.coolqhttpapi\config.ini</kbd>然后重载应用。
 
 ```config.ini
