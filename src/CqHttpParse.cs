@@ -66,25 +66,84 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 解析失败事件
         /// </summary>
         public event AsyncEventHandler<ResponseEventArgs> OnErrorParseAsync;
-
+        /// <summary>
+        /// 回调结果接口
+        /// </summary>
         private readonly Action<string, ResponseResource> SetResult;
-
         /// <summary>
         /// CQHTTP消息解析
         /// </summary>
         /// <param name="setResult">回调存放点</param>
         public CqHttpParse(Action<string, ResponseResource> setResult)
         {
-            this.SetResult = setResult;
+            if (this.SetResult == null)
+            {
+                this.SetResult = setResult;
+            }
         }
-
         /// <summary>
         /// 解析消息
+        /// </summary>
+        /// <param name="selfId">消息来源</param>
+        /// <param name="pack">消息封装</param>
+        /// <returns></returns>
+        public async Task Parse(object selfId, MessageEventArgs pack)
+        {
+            try
+            {
+                using (var docs = JsonDocument.Parse(pack.Message))
+                {
+                    await Task.Run(async () =>
+                    {
+                        DateTime receivedDate = DateTime.Now;
+                        if (long.TryParse(selfId as string, out long sid) == false) { return; }
+                        if (docs.RootElement.TryGetProperty("time", out JsonElement je_time))
+                        {
+                            if (je_time.ValueKind == JsonValueKind.Number)
+                            {
+                                if (je_time.TryGetInt64(out long timestamp))
+                                {
+                                    receivedDate = DateTimeOffset.FromUnixTimeSeconds(timestamp).AddHours(8).DateTime;
+                                }
+                            }
+                        }
+                        Source source = new Source(sid, receivedDate, pack);
+                        if (docs.RootElement.TryGetProperty("post_type", out JsonElement je_ptype) == false)
+                        {
+                            await ParseResponse(source, docs.RootElement);
+                            return;
+                        }
+                        if (je_ptype.ValueKind != JsonValueKind.String) { return; }
+                        switch (je_ptype.GetString())
+                        {
+                            case "meta_event":
+                                MetaEvent(docs.RootElement, source);
+                                break;
+                            case "message":
+                                MessageEvent(docs.RootElement, source);
+                                break;
+                            case "notice":
+                                NoticEvent(docs.RootElement, source);
+                                break;
+                            case "request":
+                                RequestEvent(docs.RootElement, source);
+                                break;
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorParseAsync?.Invoke(selfId, new ResponseEventArgs(null, new CqHttpContent() { RetCode = -1, Status = ex.ToString() }));
+            }
+        }
+        /// <summary>
+        /// 解析回调消息
         /// </summary>
         /// <param name="source"></param>
         /// <param name="element"></param>
         /// <returns></returns>
-        public async Task<ResponseResource> ParseResponse(Source source, JsonElement element)
+        private async Task<ResponseResource> ParseResponse(Source source, JsonElement element)
         {
             try
             {
@@ -102,14 +161,12 @@ namespace cqhttp.WebSocketReverse.NETCore
                             if (element.TryGetProperty("data", out JsonElement je_data) == false) { break; }
                             if (je_echo.ValueKind != JsonValueKind.String) { break; }
                             if (je_data.ValueKind == JsonValueKind.Null) { break; }
-                            if (OnResponseAsync != null)
-                                await OnResponseAsync(source.SelfId, new ResponseEventArgs(source, response));
-                            await ResponseParse(echo, je_data, data);
+                            await OnResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response));
+                            await ResponseParse(source, echo, je_data, data);
                             break;
                         case "failed":
                             if (retcode < 1) { break; }
-                            if (OnErrorResponseAsync != null)
-                                await OnErrorResponseAsync(source.SelfId, new ResponseEventArgs(source, response));
+                            await OnErrorResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response));
                             data.IsFailed = true;
                             this.SetResult(echo, data);
                             break;
@@ -119,12 +176,19 @@ namespace cqhttp.WebSocketReverse.NETCore
             }
             catch (Exception ex)
             {
-                if (OnErrorParseAsync != null)
-                    await OnErrorParseAsync(source.SelfId, new ResponseEventArgs(source, new CqHttpContent() { RetCode = -1, Status = ex.ToString() }));
+                await OnErrorParseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, new CqHttpContent() { RetCode = -1, Status = ex.ToString() }));
             }
             return null;
         }
-        public async Task<ResponseResource> ResponseParse(string echo, JsonElement jData, ResponseResource data)
+        /// <summary>
+        /// 回调消息解析
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="echo"></param>
+        /// <param name="jData"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private async Task<ResponseResource> ResponseParse(Source source, string echo, JsonElement jData, ResponseResource data)
         {
             return await Task.Run(() =>
             {
@@ -133,199 +197,169 @@ namespace cqhttp.WebSocketReverse.NETCore
                 data.IsInVaild = false;
                 string[] ctx = echo.TrimStart('~').Split('@');
                 RequestType task = (RequestType)System.Enum.Parse(typeof(RequestType), ctx[0]);
-
-                switch (task)
+                try
                 {
-                    case RequestType.SendMsg:
-                        if (jData.TryGetProperty("message_id", out JsonElement je_mid) == false) { break; }
-                        if (je_mid.ValueKind != JsonValueKind.Number) { break; }
-                        data.MessageId = je_mid.GetInt32();
-                        break;
-                    case RequestType.GetLoginInfo:
-                        data.LoginInfo = JsonSerializer.Deserialize<LoginInfo>(jData.GetRawText());
-                        break;
-                    case RequestType.GetStrangerInfo:
-                        data.QQInfo = JsonSerializer.Deserialize<QQInfo>(jData.GetRawText());
-                        break;
-                    case RequestType.GetGroupInfo:
-                        data.GroupList = new List<Group>();
-                        data.GroupList.Add(JsonSerializer.Deserialize<Group>(jData.GetRawText()));
-                        break;
-                    case RequestType.GetGroupList:
-                        data.GroupList = JsonSerializer.Deserialize<IList<Group>>(jData.GetRawText());
-                        break;
-                    case RequestType.GetGroupMemberInfo:
-                        data.GroupMemberList = new List<GroupMemberInfo>();
-                        data.GroupMemberList.Add(JsonSerializer.Deserialize<GroupMemberInfo>(jData.GetRawText()));
-                        break;
-                    case RequestType.GetGroupMemberList:
-                        data.GroupMemberList = JsonSerializer.Deserialize<IList<GroupMemberInfo>>(jData.GetRawText());
-                        break;
-                    case RequestType.GetCookies:
-                    case RequestType.GetCredentials:
-                        data.Credentials = JsonSerializer.Deserialize<Credentials>(jData.GetRawText());
-                        break;
-                    case RequestType.GetCsrfToken:
-                        if (jData.TryGetProperty("token", out JsonElement je_token))
-                        {
-                            if (je_token.TryGetInt32(out int token))
+                    switch (task)
+                    {
+                        case RequestType.SendMsg:
+                            if (jData.TryGetProperty("message_id", out JsonElement je_mid) == false) { break; }
+                            if (je_mid.ValueKind != JsonValueKind.Number) { break; }
+                            data.MessageId = je_mid.GetInt32();
+                            break;
+                        case RequestType.GetLoginInfo:
+                            data.LoginInfo = JsonSerializer.Deserialize<LoginInfo>(jData.GetRawText());
+                            break;
+                        case RequestType.GetStrangerInfo:
+                            data.QQInfo = JsonSerializer.Deserialize<QQInfo>(jData.GetRawText());
+                            break;
+                        case RequestType.GetGroupInfo:
+                            data.GroupList = new List<Group>();
+                            data.GroupList.Add(JsonSerializer.Deserialize<Group>(jData.GetRawText()));
+                            break;
+                        case RequestType.GetGroupList:
+                            data.GroupList = JsonSerializer.Deserialize<IList<Group>>(jData.GetRawText());
+                            break;
+                        case RequestType.GetGroupMemberInfo:
+                            data.GroupMemberList = new List<GroupMemberInfo>();
+                            data.GroupMemberList.Add(JsonSerializer.Deserialize<GroupMemberInfo>(jData.GetRawText()));
+                            break;
+                        case RequestType.GetGroupMemberList:
+                            data.GroupMemberList = JsonSerializer.Deserialize<IList<GroupMemberInfo>>(jData.GetRawText());
+                            break;
+                        case RequestType.GetCookies:
+                        case RequestType.GetCredentials:
+                            data.Credentials = JsonSerializer.Deserialize<Credentials>(jData.GetRawText());
+                            break;
+                        case RequestType.GetCsrfToken:
+                            if (jData.TryGetProperty("token", out JsonElement je_token))
                             {
-                                data.Credentials = new Credentials() { CsrfToken = token };
+                                if (je_token.TryGetInt32(out int token))
+                                {
+                                    data.Credentials = new Credentials() { CsrfToken = token };
+                                }
                             }
-                        }
-                        break;
-                    case RequestType.GetRecord:
-                    case RequestType.GetImage:
-                        data.File = JsonSerializer.Deserialize<FileInfo>(jData.GetRawText());
-                        break;
-                    case RequestType.CanSendImage:
-                        if (jData.TryGetProperty("yes", out JsonElement je_yes_image))
-                        {
-                            if (je_yes_image.ValueKind == JsonValueKind.True || je_yes_image.ValueKind == JsonValueKind.False)
+                            break;
+                        case RequestType.GetRecord:
+                        case RequestType.GetImage:
+                            data.File = JsonSerializer.Deserialize<FileInfo>(jData.GetRawText());
+                            break;
+                        case RequestType.CanSendImage:
+                            if (jData.TryGetProperty("yes", out JsonElement je_yes_image))
                             {
-                                data.CanSendImage = je_yes_image.GetBoolean();
+                                if (je_yes_image.ValueKind == JsonValueKind.True || je_yes_image.ValueKind == JsonValueKind.False)
+                                {
+                                    data.CanSendImage = je_yes_image.GetBoolean();
+                                }
                             }
-                        }
-                        break;
-                    case RequestType.CanSendRecord:
-                        if (jData.TryGetProperty("yes", out JsonElement je_yes_record))
-                        {
-                            if (je_yes_record.ValueKind == JsonValueKind.True || je_yes_record.ValueKind == JsonValueKind.False)
+                            break;
+                        case RequestType.CanSendRecord:
+                            if (jData.TryGetProperty("yes", out JsonElement je_yes_record))
                             {
-                                data.CanSendRecord = je_yes_record.GetBoolean();
+                                if (je_yes_record.ValueKind == JsonValueKind.True || je_yes_record.ValueKind == JsonValueKind.False)
+                                {
+                                    data.CanSendRecord = je_yes_record.GetBoolean();
+                                }
                             }
-                        }
-                        break;
-                    case RequestType.GetStatus:
-                        data.Status = JsonSerializer.Deserialize<CqHttpStatus>(jData.GetRawText());
-                        break;
-                    case RequestType.GetVersionInfo:
-                        data.Version = JsonSerializer.Deserialize<CqHttpVersion>(jData.GetRawText());
-                        break;
-                    case RequestType.GetFriendList:
-                        data.FriendGroupList = JsonSerializer.Deserialize<IList<FriendGroup>>(jData.GetRawText());
-                        break;
-                    case RequestType.GetVipInfo:
-                        data.QQInfo = JsonSerializer.Deserialize<QQInfo>(jData.GetRawText());
-                        break;
-                    case RequestType.DeleteMsg:
-                    case RequestType.SendLike:
-                    case RequestType.SetGroupKick:
-                    case RequestType.SetGroupBan:
-                    case RequestType.SetGroupAnonymousBan:
-                    case RequestType.SetGroupWholeBan:
-                    case RequestType.SetGroupAdmin:
-                    case RequestType.SetGroupAnonymous:
-                    case RequestType.SetGroupCard:
-                    case RequestType.SetGroupLeave:
-                    case RequestType.SetGroupSpecialTitle:
-                    case RequestType.SetDiscussLeave:
-                    case RequestType.SetFriendAddRequest:
-                    case RequestType.SetGroupAddRequest:
-                    case RequestType.SetRestart:
-                    case RequestType.SetRestartPlugin:
-                    case RequestType.CleanDataDir:
-                    case RequestType.CleanPluginLog:
-                    case RequestType.CheckUpdate:
-                    case RequestType.HandleQuickOperation:
-                        break;
+                            break;
+                        case RequestType.GetStatus:
+                            data.Status = JsonSerializer.Deserialize<CqHttpStatus>(jData.GetRawText());
+                            break;
+                        case RequestType.GetVersionInfo:
+                            data.Version = JsonSerializer.Deserialize<CqHttpVersion>(jData.GetRawText());
+                            break;
+                        case RequestType.GetFriendList:
+                            data.FriendGroupList = JsonSerializer.Deserialize<IList<FriendGroup>>(jData.GetRawText());
+                            break;
+                        case RequestType.GetVipInfo:
+                            data.QQInfo = JsonSerializer.Deserialize<QQInfo>(jData.GetRawText());
+                            break;
+                        case RequestType.DeleteMsg:
+                        case RequestType.SendLike:
+                        case RequestType.SetGroupKick:
+                        case RequestType.SetGroupBan:
+                        case RequestType.SetGroupAnonymousBan:
+                        case RequestType.SetGroupWholeBan:
+                        case RequestType.SetGroupAdmin:
+                        case RequestType.SetGroupAnonymous:
+                        case RequestType.SetGroupCard:
+                        case RequestType.SetGroupLeave:
+                        case RequestType.SetGroupSpecialTitle:
+                        case RequestType.SetDiscussLeave:
+                        case RequestType.SetFriendAddRequest:
+                        case RequestType.SetGroupAddRequest:
+                        case RequestType.SetRestart:
+                        case RequestType.SetRestartPlugin:
+                        case RequestType.CleanDataDir:
+                        case RequestType.CleanPluginLog:
+                        case RequestType.CheckUpdate:
+                        case RequestType.HandleQuickOperation:
+                            break;
+                    }
+                    this.SetResult(echo, data);
                 }
-                this.SetResult(echo, data);
+                catch (Exception ex)
+                {
+                    OnErrorParseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, new CqHttpContent() { RetCode = -1, Status = ex.ToString() }));
+                }
                 return data;
             });
         }
-
         /// <summary>
-        /// 解析消息
+        /// 状态事件
         /// </summary>
-        /// <param name="selfId">消息来源</param>
-        /// <param name="pack">消息封装</param>
-        /// <returns></returns>
-        public async Task Parse(object selfId, MessageEventArgs pack)
-        {
-            using (var docs = JsonDocument.Parse(pack.Message))
-            {
-                await Task.Run(async () =>
-                {
-                    DateTime receivedDate = DateTime.Now;
-                    if (long.TryParse(selfId as string, out long sid) == false) { return; }
-                    if (docs.RootElement.TryGetProperty("time", out JsonElement je_time))
-                    {
-                        if (je_time.ValueKind == JsonValueKind.Number)
-                        {
-                            if (je_time.TryGetInt64(out long timestamp))
-                            {
-                                receivedDate = DateTimeOffset.FromUnixTimeSeconds(timestamp).AddHours(8).DateTime;
-                            }
-                        }
-                    }
-                    Source source = new Source(sid, receivedDate, pack);
-                    if (docs.RootElement.TryGetProperty("post_type", out JsonElement je_ptype) == false)
-                    {
-                        await ParseResponse(source, docs.RootElement);
-                        return;
-                    }
-                    if (je_ptype.ValueKind != JsonValueKind.String) { return; }
-                    switch (je_ptype.GetString())
-                    {
-                        case "meta_event":
-                            MetaEvent(docs.RootElement, source);
-                            break;
-                        case "message":
-                            MessageEvent(docs.RootElement, source);
-                            break;
-                        case "notice":
-                            NoticEvent(docs.RootElement, source);
-                            break;
-                        case "request":
-                            RequestEvent(docs.RootElement, source);
-                            break;
-                    }
-                });
-            }
-        }
+        /// <param name="element"></param>
+        /// <param name="source"></param>
         private async void StatusEvent(JsonElement element, Source source)
         {
-
-            if (OnStatusAsync != null)
-            {
-                StatusEventArgs sea = new StatusEventArgs(source, await ParseResponse(source, element));
-                if (OnStatusAsync != null)
-                    await OnStatusAsync(source.SelfId, sea);
-            }
+            await OnStatusAsync?.Invoke(source.SelfId, new StatusEventArgs(source, await ParseResponse(source, element)));
         }
+        /// <summary>
+        /// 请求事件
+        /// </summary>
+        /// <param name="element"></param>
+        /// <param name="source"></param>
         private async void RequestEvent(JsonElement element, Source source)
         {
-            if (element.TryGetProperty("request_type", out JsonElement type))
+            try
             {
-                long userid;
-                string flag, comment;
-                if (element.TryGetProperty("user_id", out JsonElement je_uid)) { userid = je_uid.GetInt64(); } else { return; }
-                if (element.TryGetProperty("flag", out JsonElement je_flag)) { flag = je_flag.GetString(); } else { return; }
-                if (element.TryGetProperty("comment", out JsonElement je_cm)) { comment = je_cm.GetString(); } else { return; }
-                switch (type.GetString())
+                if (element.TryGetProperty("request_type", out JsonElement type))
                 {
-                    case "friend":
-                        if (OnFriendRequestAsync != null)
-                            await OnFriendRequestAsync(source.SelfId, new CqFriendRequestEventArgs(source, userid, flag, comment));
-                        break;
-                    case "group":
-                        long groupid = 0;
-                        string subtype = "";
-                        if (element.TryGetProperty("sub_type", out JsonElement je_st)) { subtype = je_st.GetString(); }
-                        if (element.TryGetProperty("group_id", out JsonElement je_gid)) { groupid = je_st.GetInt64(); }
-                        if (OnGroupRequestAsync != null)
-                            await OnGroupRequestAsync(source.SelfId, new CqGroupRequestEventArgs(source, userid, groupid, subtype, flag, comment));
-                        break;
+                    long userid;
+                    string flag, comment;
+                    if (element.TryGetProperty("user_id", out JsonElement je_uid)) { userid = je_uid.GetInt64(); } else { return; }
+                    if (element.TryGetProperty("flag", out JsonElement je_flag)) { flag = je_flag.GetString(); } else { return; }
+                    if (element.TryGetProperty("comment", out JsonElement je_cm)) { comment = je_cm.GetString(); } else { return; }
+                    switch (type.GetString())
+                    {
+                        case "friend":
+                            await OnFriendRequestAsync?.Invoke(source.SelfId, new CqFriendRequestEventArgs(source, userid, flag, comment));
+                            break;
+                        case "group":
+                            long groupid = 0;
+                            string subtype = "";
+                            if (element.TryGetProperty("sub_type", out JsonElement je_st)) { subtype = je_st.GetString(); }
+                            if (element.TryGetProperty("group_id", out JsonElement je_gid)) { groupid = je_st.GetInt64(); }
+                            await OnGroupRequestAsync?.Invoke(source.SelfId, new CqGroupRequestEventArgs(source, userid, groupid, subtype, flag, comment));
+                            break;
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                OnErrorParseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, new CqHttpContent() { RetCode = -1, Status = ex.ToString() }));
+            }
         }
+        /// <summary>
+        /// 通知事件
+        /// </summary>
+        /// <param name="element"></param>
+        /// <param name="source"></param>
         private async void NoticEvent(JsonElement element, Source source)
         {
             if (element.TryGetProperty("notice_type", out JsonElement type))
             {
-                long userid, groupid = 0, operatorid = 0, duration = 0, fileid = 0, filesize = 0, filebusid = 0;
-                string subtype = "", filename = "";
+                long userid, groupid = 0, operatorid = 0, duration = 0;
+                string subtype = "";
                 GroupNotic gnotic = GroupNotic.Upload;
                 File file = null;
                 if (element.TryGetProperty("user_id", out JsonElement je_uid)) { userid = je_uid.GetInt64(); } else { return; }
@@ -337,17 +371,18 @@ namespace cqhttp.WebSocketReverse.NETCore
                 {
                     if (je_file.GetRawText() != "null")
                     {
-                        if (je_file.TryGetProperty("id", out JsonElement je_fid)) { fileid = je_fid.GetInt64(); }
-                        if (je_file.TryGetProperty("name", out JsonElement je_fn)) { filename = je_fn.GetString(); }
-                        if (je_file.TryGetProperty("size", out JsonElement je_fs)) { filesize = je_fs.GetInt64(); }
-                        if (je_file.TryGetProperty("busid", out JsonElement je_fb)) { filebusid = je_fb.GetInt64(); }
-                        file = new File()
+                        if (je_file.TryGetProperty("id", out JsonElement je_fid) && je_file.TryGetProperty("name", out JsonElement je_fn) &&
+                            je_file.TryGetProperty("size", out JsonElement je_fs) && je_file.TryGetProperty("busid", out JsonElement je_fb))
                         {
-                            Id = fileid,
-                            Name = filename,
-                            Size = filesize,
-                            Busid = filebusid
-                        };
+                            file = new File()
+                            {
+                                Id = je_fid.GetInt64(),
+                                Name = je_fn.GetString(),
+                                Size = je_fs.GetInt64(),
+                                Busid = je_fb.GetInt64()
+                            };
+                        }
+
                     }
                 }
                 switch (subtype)
@@ -387,83 +422,98 @@ namespace cqhttp.WebSocketReverse.NETCore
                     case "group_decrease":
                     case "group_increase":
                     case "group_ban":
-                        if (OnGroupNoticAsync != null)
-                            await OnGroupNoticAsync(source.SelfId, new CqGroupNoticEventArgs(source, groupid, userid, operatorid, duration, file, gnotic));
+                        await OnGroupNoticAsync?.Invoke(source.SelfId, new CqGroupNoticEventArgs(source, groupid, userid, operatorid, duration, file, gnotic));
                         break;
                     case "friend_add":
-                        if (OnFriendAddAsync != null)
-                            await OnFriendAddAsync(source.SelfId, new CqFriendAddEventArgs(source, userid));
+                        await OnFriendAddAsync?.Invoke(source.SelfId, new CqFriendAddEventArgs(source, userid));
                         break;
                 }
             }
         }
+        /// <summary>
+        /// 消息事件
+        /// </summary>
+        /// <param name="element"></param>
+        /// <param name="source"></param>
         private async void MessageEvent(JsonElement element, Source source)
         {
             if (element.TryGetProperty("message_type", out JsonElement type))
             {
-                int age = 0;
-                long targetid = 0, user_id = 0, anonymousId = 0;
-                string subtype = "", nickname = "", card = "", sex = "", area = "", role = "", title = "", flag = "", name = "", level = "";
-                InGroupSex gsex = InGroupSex.Unknown;
-                GroupRole gro = GroupRole.Member;
-
                 if (element.TryGetProperty("sender", out JsonElement je_sender) == false) { return; }
-                if (element.TryGetProperty("sub_type", out JsonElement je_st)) { subtype = je_st.GetString(); }
+                Anonymous anonymous = null;
+                CqHttpSender sender = new CqHttpSender();
+                long targetid = 0;
+                string subtype = "";
                 if (element.TryGetProperty("discuss_id", out JsonElement je_di)) { targetid = je_di.GetInt64(); }
                 if (element.TryGetProperty("group_id", out JsonElement je_gi)) { targetid = je_gi.GetInt64(); }
-                if (je_sender.TryGetProperty("user_id", out JsonElement je_uid)) { user_id = je_uid.GetInt64(); }
-                if (je_sender.TryGetProperty("age", out JsonElement je_age)) { age = je_age.GetInt32(); }
-                if (je_sender.TryGetProperty("nickname", out JsonElement je_name)) { nickname = je_name.GetString(); }
-
-                if (je_sender.TryGetProperty("level", out JsonElement je_level)) { level = je_level.GetString(); }
-                if (je_sender.TryGetProperty("card", out JsonElement je_card)) { card = je_card.GetString(); }
-                if (je_sender.TryGetProperty("sex", out JsonElement je_sex)) { sex = je_sex.GetString(); }
-                if (je_sender.TryGetProperty("area", out JsonElement je_area)) { area = je_area.GetString(); }
-                if (je_sender.TryGetProperty("role", out JsonElement je_role)) { role = je_role.GetString(); }
-                if (je_sender.TryGetProperty("title", out JsonElement je_title)) { title = je_title.GetString(); }
-
-                switch (sex)
+                if (element.TryGetProperty("sub_type", out JsonElement je_st)) { subtype = je_st.GetString(); }
+                if (je_sender.TryGetProperty("user_id", out JsonElement je_uid)) { sender.UserId = je_uid.GetInt64(); }
+                if (je_sender.TryGetProperty("nickname", out JsonElement je_name)) { sender.NickName = je_name.GetString(); }
+                if (je_sender.TryGetProperty("age", out JsonElement je_age)) { sender.Age = je_age.GetInt32(); }
+                if (je_sender.TryGetProperty("sex", out JsonElement je_sex))
                 {
-                    case "male":
-                        gsex = InGroupSex.Male;
-                        break;
-                    case "female":
-                        gsex = InGroupSex.Male;
-                        break;
-                    case "unknown":
-                        gsex = InGroupSex.Unknown;
-                        break;
+                    switch (je_sex.GetString())
+                    {
+                        case "male":
+                            sender.Sex = InGroupSex.Male;
+                            break;
+                        case "female":
+                            sender.Sex = InGroupSex.Male;
+                            break;
+                        case "unknown":
+                            sender.Sex = InGroupSex.Unknown;
+                            break;
+                    }
                 }
-                switch (role)
+                if (type.GetString() == "group")
                 {
-                    case "owner":
-                        gro = GroupRole.Owner;
-                        break;
-                    case "admin":
-                        gro = GroupRole.Admin;
-                        break;
-                    case "member":
-                        gro = GroupRole.Member;
-                        break;
+                    if (je_sender.TryGetProperty("anonymous", out JsonElement je_anonymous))
+                    {
+                        if (je_anonymous.ValueKind != JsonValueKind.Null)
+                        {
+                            if (je_sender.TryGetProperty("area", out JsonElement je_anonymousId))
+                                if (je_sender.TryGetProperty("role", out JsonElement je_anonymousFlag))
+                                    if (je_sender.TryGetProperty("title", out JsonElement je_anonymousName))
+                                        anonymous = new Anonymous()
+                                        {
+                                            Id = je_anonymousId.GetInt64(),
+                                            Flag = je_anonymousFlag.GetString(),
+                                            Name = je_anonymousName.GetString()
+                                        };
+                        }
+                    }
+                    if (je_sender.TryGetProperty("role", out JsonElement je_role))
+                    {
+                        switch (je_role.GetString())
+                        {
+                            case "owner":
+                                sender.Role = Model.GroupRole.Owner;
+                                break;
+                            case "admin":
+                                sender.Role = Model.GroupRole.Admin;
+                                break;
+                            case "member":
+                                sender.Role = Model.GroupRole.Member;
+                                break;
+                        }
+                    }
+                    if (je_sender.TryGetProperty("level", out JsonElement je_level))
+                    {
+                        sender.Level = je_level.GetString();
+                    }
+                    if (je_sender.TryGetProperty("card", out JsonElement je_card))
+                    {
+                        sender.Card = je_card.GetString();
+                    }
+                    if (je_sender.TryGetProperty("area", out JsonElement je_area))
+                    {
+                        sender.Area = je_area.GetString();
+                    }
+                    if (je_sender.TryGetProperty("title", out JsonElement je_title))
+                    {
+                        sender.Title = je_title.GetString();
+                    }
                 }
-                CqHttpSender sender = new CqHttpSender()
-                {
-                    UserId = user_id,
-                    Age = age,
-                    Level = level,
-                    NickName = nickname,
-                    Card = card,
-                    Sex = gsex,
-                    Area = area,
-                    Role = gro,
-                    Title = title
-                };
-                Anonymous anonymous = new Anonymous()
-                {
-                    Id = anonymousId,
-                    Flag = flag,
-                    Name = name
-                };
                 CqHttpMessageEventArgs ea = new CqHttpMessageEventArgs(
                     message: element.GetProperty("message").GetString(),
                     rawMessage: element.GetProperty("raw_message").GetString(),
@@ -475,27 +525,26 @@ namespace cqhttp.WebSocketReverse.NETCore
                     anonymous: anonymous,
                     source: source
                  );
-                if (OnMessageAsync != null)
-                {
-                    await OnMessageAsync(source.SelfId, ea);
-                }
+                await OnMessageAsync?.Invoke(source.SelfId, ea);
                 switch (type.GetString())
                 {
                     case "private":
-                        if (OnPrivateMessageAsync != null)
-                            await OnPrivateMessageAsync(source.SelfId, ea);
+                        await OnPrivateMessageAsync?.Invoke(source.SelfId, ea);
                         break;
                     case "group":
-                        if (OnGroupMessageAsync != null)
-                            await OnGroupMessageAsync(source.SelfId, ea);
+                        await OnGroupMessageAsync?.Invoke(source.SelfId, ea);
                         break;
                     case "discuss":
-                        if (OnDiscussMessageAsync != null)
-                            await OnDiscussMessageAsync(source.SelfId, ea);
+                        await OnDiscussMessageAsync?.Invoke(source.SelfId, ea);
                         break;
                 }
             }
         }
+        /// <summary>
+        /// 元事件
+        /// </summary>
+        /// <param name="element"></param>
+        /// <param name="source"></param>
         private async void MetaEvent(JsonElement element, Source source)
         {
             if (element.TryGetProperty("meta_event_type", out JsonElement meta))
@@ -511,17 +560,9 @@ namespace cqhttp.WebSocketReverse.NETCore
                 {
                     if (element.TryGetProperty("sub_type", out JsonElement subType))
                     {
-                        switch (subType.GetString())
-                        {
-                            case "enable":
-                                break;
-                            case "disable":
-                                break;
-                            case "connect":
-                                if (OnConnectedAsync != null)
-                                    await OnConnectedAsync(source.SelfId, new ConnectEventArgs(source));
-                                break;
-                        }
+                        //只有 HTTP 上报（配置了 post_url ）的情况下可以收到 enable 和 disable 故忽略判断
+                        if (subType.GetString() == "connect")
+                            await OnConnectedAsync?.Invoke(source.SelfId, new ConnectEventArgs(source));
                     }
                 }
             }

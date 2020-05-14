@@ -46,11 +46,11 @@ namespace cqhttp.WebSocketReverse.NETCore.Model
         /// <summary>
         /// 性别
         /// </summary>
-        public InGroupSex Sex { get; set; }
+        public InGroupSex Sex { get; set; } = InGroupSex.Unknown;
 
         /// <summary>
         /// 角色
         /// </summary>
-        public GroupRole Role { get; set; }
+        public GroupRole Role { get; set; } = GroupRole.Member;
     }
 }
