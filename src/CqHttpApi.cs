@@ -195,7 +195,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="userId">对方 QQ 号</param>
         /// <param name="message">要发送的内容</param>
         /// <param name="auto_escape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
-        public static async Task<int> SendPrivateMessage(this Source source, string message, long? userId = null, bool autoEscape = false)
+        public static async Task<int> SendPrivateMessage(this Source source, string message, long userId = 0, bool autoEscape = false)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -204,7 +204,7 @@ namespace cqhttp.WebSocketReverse.NETCore
                 {
                     MessageType = MessageFlags.Group,
                     Message = message,
-                    UserId = userId ?? source.UserId,
+                    UserId = userId,
                     MessageAutoEscape = autoEscape
                 }
             });
@@ -218,7 +218,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="groupId">群号</param>
         /// <param name="message">要发送的内容</param>
         /// <param name="auto_escape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
-        public static async Task<ResponseResource> SendGroupAnonymousMessage(this Source source, string message, long? groupId = null, bool autoEscape = false)
+        public static async Task<ResponseResource> SendGroupAnonymousMessage(this Source source, string message, long groupId = 0, bool autoEscape = false)
         {
             return await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -227,7 +227,7 @@ namespace cqhttp.WebSocketReverse.NETCore
                 {
                     MessageType = MessageFlags.Group,
                     Message = $"[CQ:anonymous,ignore=true]{message}",
-                    GroupId = groupId ?? source.GroupId,
+                    GroupId = groupId,
                     MessageAutoEscape = autoEscape,
                 }
             });
@@ -240,7 +240,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="groupId">群号</param>
         /// <param name="message">要发送的内容</param>
         /// <param name="auto_escape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
-        public static async Task<ResponseResource> SendGroupMessage(this Source source, string message, long? groupId = null, bool autoEscape = false)
+        public static async Task<ResponseResource> SendGroupMessage(this Source source, string message, long groupId = 0, bool autoEscape = false)
         {
             return await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -249,7 +249,7 @@ namespace cqhttp.WebSocketReverse.NETCore
                 {
                     MessageType = MessageFlags.Group,
                     Message = message,
-                    GroupId = groupId ?? source.GroupId,
+                    GroupId = groupId,
                     MessageAutoEscape = autoEscape,
                 }
             });
@@ -262,7 +262,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="discussId">讨论组 ID（正常情况下看不到，需要从讨论组消息上报的数据中获得）</param>
         /// <param name="message">要发送的内容</param>
         /// <param name="auto_escape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
-        public static async Task<ResponseResource> SendDiscussMessage(this Source source, string message, long? discussId = null, bool autoEscape = false)
+        public static async Task<ResponseResource> SendDiscussMessage(this Source source, string message, long discussId = 0, bool autoEscape = false)
         {
             return await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -271,7 +271,7 @@ namespace cqhttp.WebSocketReverse.NETCore
                 {
                     MessageType = MessageFlags.Discuss,
                     Message = message,
-                    DiscussId = discussId ?? source.DiscussId,
+                    DiscussId = discussId,
                     MessageAutoEscape = autoEscape,
                 }
             });
