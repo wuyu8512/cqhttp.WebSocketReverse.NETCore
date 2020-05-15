@@ -134,7 +134,7 @@ namespace cqhttp.WebSocketReverse.NETCore
             }
             catch (Exception ex)
             {
-                OnErrorParseAsync?.Invoke(selfId, new ResponseEventArgs(null, new CqHttpContent() { RetCode = -1, Status = ex.ToString() }));
+                await (OnErrorParseAsync?.Invoke(selfId, new ResponseEventArgs(null, new CqHttpContent() { RetCode = -1, Status = ex.ToString() })) ?? Task.CompletedTask);
             }
         }
         /// <summary>
@@ -161,12 +161,12 @@ namespace cqhttp.WebSocketReverse.NETCore
                             if (element.TryGetProperty("data", out JsonElement je_data) == false) { break; }
                             if (je_echo.ValueKind != JsonValueKind.String) { break; }
                             if (je_data.ValueKind == JsonValueKind.Null) { break; }
-                            await OnResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response));
+                            await (OnResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response)) ?? Task.CompletedTask);
                             await ResponseParse(source, echo, je_data, data);
                             break;
                         case "failed":
                             if (retcode < 1) { break; }
-                            await OnErrorResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response));
+                            await (OnErrorResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response)) ?? Task.CompletedTask);
                             data.IsFailed = true;
                             this.SetResult(echo, data);
                             break;
@@ -176,7 +176,7 @@ namespace cqhttp.WebSocketReverse.NETCore
             }
             catch (Exception ex)
             {
-                await OnErrorParseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, new CqHttpContent() { RetCode = -1, Status = ex.ToString() }));
+                await (OnErrorParseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, new CqHttpContent() { RetCode = -1, Status = ex.ToString() })) ?? Task.CompletedTask);
             }
             return null;
         }
@@ -190,7 +190,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <returns></returns>
         private async Task<ResponseResource> ResponseParse(Source source, string echo, JsonElement jData, ResponseResource data)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 if (echo.StartsWith('~') == false) { return data; }
                 if (echo.Contains('@') == false) { return data; }
@@ -299,7 +299,7 @@ namespace cqhttp.WebSocketReverse.NETCore
                 }
                 catch (Exception ex)
                 {
-                    OnErrorParseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, new CqHttpContent() { RetCode = -1, Status = ex.ToString() }));
+                    await (OnErrorParseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, new CqHttpContent() { RetCode = -1, Status = ex.ToString() })) ?? Task.CompletedTask);
                 }
                 return data;
             });
@@ -311,7 +311,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         private async void StatusEvent(JsonElement element, Source source)
         {
-            await OnStatusAsync?.Invoke(source.SelfId, new StatusEventArgs(source, await ParseResponse(source, element)));
+            await (OnStatusAsync?.Invoke(source.SelfId, new StatusEventArgs(source, await ParseResponse(source, element))) ?? Task.CompletedTask);
         }
         /// <summary>
         /// 请求事件
@@ -332,21 +332,21 @@ namespace cqhttp.WebSocketReverse.NETCore
                     switch (type.GetString())
                     {
                         case "friend":
-                            await OnFriendRequestAsync?.Invoke(source.SelfId, new CqFriendRequestEventArgs(source, userid, flag, comment));
+                            await (OnFriendRequestAsync?.Invoke(source.SelfId, new CqFriendRequestEventArgs(source, userid, flag, comment)) ?? Task.CompletedTask);
                             break;
                         case "group":
                             long groupid = 0;
                             string subtype = "";
                             if (element.TryGetProperty("sub_type", out JsonElement je_st)) { subtype = je_st.GetString(); }
                             if (element.TryGetProperty("group_id", out JsonElement je_gid)) { groupid = je_st.GetInt64(); }
-                            await OnGroupRequestAsync?.Invoke(source.SelfId, new CqGroupRequestEventArgs(source, userid, groupid, subtype, flag, comment));
+                            await (OnGroupRequestAsync?.Invoke(source.SelfId, new CqGroupRequestEventArgs(source, userid, groupid, subtype, flag, comment)) ?? Task.CompletedTask);
                             break;
                     }
                 }
             }
             catch (Exception ex)
             {
-                OnErrorParseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, new CqHttpContent() { RetCode = -1, Status = ex.ToString() }));
+                await (OnErrorParseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, new CqHttpContent() { RetCode = -1, Status = ex.ToString() })) ?? Task.CompletedTask);
             }
         }
         /// <summary>
@@ -422,10 +422,10 @@ namespace cqhttp.WebSocketReverse.NETCore
                     case "group_decrease":
                     case "group_increase":
                     case "group_ban":
-                        await OnGroupNoticAsync?.Invoke(source.SelfId, new CqGroupNoticEventArgs(source, groupid, userid, operatorid, duration, file, gnotic));
+                        await (OnGroupNoticAsync?.Invoke(source.SelfId, new CqGroupNoticEventArgs(source, groupid, userid, operatorid, duration, file, gnotic)) ?? Task.CompletedTask);
                         break;
                     case "friend_add":
-                        await OnFriendAddAsync?.Invoke(source.SelfId, new CqFriendAddEventArgs(source, userid));
+                        await (OnFriendAddAsync?.Invoke(source.SelfId, new CqFriendAddEventArgs(source, userid)) ?? Task.CompletedTask);
                         break;
                 }
             }
@@ -444,6 +444,7 @@ namespace cqhttp.WebSocketReverse.NETCore
                 CqHttpSender sender = new CqHttpSender();
                 long targetid = 0;
                 string subtype = "";
+
                 if (element.TryGetProperty("discuss_id", out JsonElement je_di)) { targetid = je_di.GetInt64(); }
                 if (element.TryGetProperty("group_id", out JsonElement je_gi)) { targetid = je_gi.GetInt64(); }
                 if (element.TryGetProperty("sub_type", out JsonElement je_st)) { subtype = je_st.GetString(); }
@@ -525,17 +526,17 @@ namespace cqhttp.WebSocketReverse.NETCore
                     anonymous: anonymous,
                     source: source
                  );
-                await OnMessageAsync?.Invoke(source.SelfId, ea);
+                await (OnMessageAsync?.Invoke(source.SelfId, ea) ?? Task.CompletedTask);
                 switch (type.GetString())
                 {
                     case "private":
-                        await OnPrivateMessageAsync?.Invoke(source.SelfId, ea);
+                        await (OnPrivateMessageAsync?.Invoke(source.SelfId, ea) ?? Task.CompletedTask);
                         break;
                     case "group":
-                        await OnGroupMessageAsync?.Invoke(source.SelfId, ea);
+                        await (OnGroupMessageAsync?.Invoke(source.SelfId, ea) ?? Task.CompletedTask);
                         break;
                     case "discuss":
-                        await OnDiscussMessageAsync?.Invoke(source.SelfId, ea);
+                        await (OnDiscussMessageAsync?.Invoke(source.SelfId, ea) ?? Task.CompletedTask);
                         break;
                 }
             }
@@ -562,7 +563,7 @@ namespace cqhttp.WebSocketReverse.NETCore
                     {
                         //只有 HTTP 上报（配置了 post_url ）的情况下可以收到 enable 和 disable 故忽略判断
                         if (subType.GetString() == "connect")
-                            await OnConnectedAsync?.Invoke(source.SelfId, new ConnectEventArgs(source));
+                            await (OnConnectedAsync?.Invoke(source.SelfId, new ConnectEventArgs(source)) ?? Task.CompletedTask);
                     }
                 }
             }

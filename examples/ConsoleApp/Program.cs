@@ -9,6 +9,7 @@
     {
         static void Main(string[] args)
         {
+            int count = 1;
             WebSocketServer wss = new WebSocketServer("ws://0.0.0.0:8889");
 
             CqHttpParse parse = new CqHttpParse(CqHttpApi.SetResult);
@@ -28,6 +29,7 @@
             };
             parse.OnPrivateMessageAsync += async (n, b) =>
             {
+                Console.Out.WriteLine(count++);
                 await b.Source.Replay(b.Message);
             };
 
