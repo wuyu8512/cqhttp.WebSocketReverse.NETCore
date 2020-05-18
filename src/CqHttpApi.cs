@@ -23,16 +23,6 @@ namespace cqhttp.WebSocketReverse.NETCore
         public static TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 
         /// <summary>
-        /// 啟用同期接收上限
-        /// </summary>
-        public static bool IsEnableCallbackLimit { get; set; } = false;
-
-        /// <summary>
-        /// 回调接收同期上限
-        /// </summary>
-        public static int MaximumWait { get; set; } = 100;
-
-        /// <summary>
         /// 回复对方消息
         /// </summary>
         /// <param name="source"></param>
@@ -968,31 +958,22 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="timeout"></param>
         private static async Task<ResponseResource> SendRequestMessage(this Source source, CqHttpRequest message)
         {
-            string echo = $"~{message.Task}@{Guid.NewGuid()}";
-            if (IsEnableCallbackLimit) 
-            {
-                if (MaximumWait > ActionResource.Operations.Count)
-                {
-                    SpinWait.SpinUntil(()=> ActionResource.Operations.Count() < MaximumWait);
-                }
-            }
-            if (ActionResource.Operations.TryAdd(echo, new TaskCompletionSource<ResponseResource>()))
+            message.Echo = $"~{message.Task}@{Guid.NewGuid()}";
+            var task = new TaskCompletionSource<ResponseResource>();
+            if (ActionResource.Operations.TryAdd(message.Echo, task))
             {
                 var api = source.ConnectionData.RoleAndConnections.TryGetValue("API", out Connection conn);
                 if (api)
                 {
-                    message.Echo = echo;
-                    string jsonString = JsonSerializer.Serialize(message, new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Default });
-                    await conn.Send(jsonString);
-                    return await GetResult(echo, Timeout);
+                    await conn.Send(JsonSerializer.Serialize(message, new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Default }));
+                    return await GetResult(message.Echo, task.Task, Timeout);
                 }
             }
             return null;
         }
 
-        public static async Task<ResponseResource> GetResult(string echo, TimeSpan timeout)
+        public static async Task<ResponseResource> GetResult(string echo, Task<ResponseResource> task, TimeSpan timeout)
         {
-            var task = ActionResource.Operations[echo].Task;
             bool received = await Task.WhenAny(task, Task.Delay(timeout)) == task;
             ActionResource.Operations.TryRemove(echo, out TaskCompletionSource<ResponseResource> _);
             if(received) return await task;

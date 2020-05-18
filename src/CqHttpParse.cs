@@ -82,7 +82,7 @@ namespace cqhttp.WebSocketReverse.NETCore
             }
         }
         /// <summary>
-        /// 解析消息
+        /// 解析消息,事件分发
         /// </summary>
         /// <param name="selfId">消息来源</param>
         /// <param name="pack">消息封装</param>
@@ -138,7 +138,7 @@ namespace cqhttp.WebSocketReverse.NETCore
             }
         }
         /// <summary>
-        /// 解析回调消息
+        /// 解析回调状态
         /// </summary>
         /// <param name="source"></param>
         /// <param name="element"></param>
@@ -147,32 +147,23 @@ namespace cqhttp.WebSocketReverse.NETCore
         {
             try
             {
-                string status = "", echo = "";
                 var response = JsonSerializer.Deserialize<CqHttpContent>(element.GetRawText());
-                if (element.TryGetProperty("retcode", out JsonElement je_rc) && je_rc.ValueKind == JsonValueKind.Number && je_rc.TryGetInt32(out int retcode))
+                ResponseResource data = new ResponseResource() { Retcode = response.RetCode };
+                switch (response.Status)
                 {
-                    if (element.TryGetProperty("status", out JsonElement je_status)) { status = je_status.GetString(); }
-                    if (element.TryGetProperty("echo", out JsonElement je_echo)) { echo = je_echo.GetString(); }
-                    ResponseResource data = new ResponseResource() { Retcode = retcode };
-                    switch (status)
-                    {
-                        case "ok":
-                        case "async":
-                            if (element.TryGetProperty("data", out JsonElement je_data) == false) { break; }
-                            if (je_echo.ValueKind != JsonValueKind.String) { break; }
-                            if (je_data.ValueKind == JsonValueKind.Null) { break; }
-                            await (OnResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response)) ?? Task.CompletedTask);
-                            await ResponseParse(source, echo, je_data, data);
-                            break;
-                        case "failed":
-                            if (retcode < 1) { break; }
-                            await (OnErrorResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response)) ?? Task.CompletedTask);
-                            data.IsFailed = true;
-                            this.SetResult(echo, data);
-                            break;
-                    }
-                    return data;
+                    case "ok":
+                    case "async":
+                        await (OnResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response)) ?? Task.CompletedTask);
+                        await ResponseParse(source, response.Echo, response.Data, data);
+                        break;
+                    case "failed":
+                        await (OnErrorResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response)) ?? Task.CompletedTask);
+                        data.IsFailed = true;
+                        this.SetResult(response.Echo, data);
+                        break;
                 }
+                return data;
+
             }
             catch (Exception ex)
             {
@@ -181,7 +172,7 @@ namespace cqhttp.WebSocketReverse.NETCore
             return null;
         }
         /// <summary>
-        /// 回调消息解析
+        /// 解析回调消息
         /// </summary>
         /// <param name="source"></param>
         /// <param name="echo"></param>
