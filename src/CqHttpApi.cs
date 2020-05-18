@@ -12,13 +12,16 @@ using cqhttp.WebSocketReverse.NETCore.Enumeration;
 using cqhttp.WebSocketReverse.NETCore.Model.Params;
 using cqhttp.WebSocketReverse.NETCore.Model.Response;
 using System.Threading;
+using System.Reactive.Subjects;
+using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 
 namespace cqhttp.WebSocketReverse.NETCore
 {
     public static class CqHttpApi
     {
         /// <summary>
-        /// 回调接收限制
+        /// 回调超时限制
         /// </summary>
         public static TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 
@@ -958,6 +961,27 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="timeout"></param>
         private static async Task<ResponseResource> SendRequestMessage(this Source source, CqHttpRequest message)
         {
+            var api = source.ConnectionData.RoleAndConnections.TryGetValue("API", out Connection conn);
+            if (api)
+            {
+                message.Echo = $"~{message.Task}@{Guid.NewGuid()}";
+                await conn.Send(JsonSerializer.Serialize(message, new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Default }));
+                return await ActionResource.CQHTTPSubject
+                    .Where(r => r.Item1 == message.Echo).Select(r => r.Item2).Take(1)
+                    .Timeout(Timeout).Catch(Observable.Return<ResponseResource>(null)).ToTask();
+            }
+            return null;
+        }
+
+        [Obsolete]
+        /// <summary>
+        /// 发送请求消息(过时)
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="message"></param>
+        /// <param name="timeout"></param>
+        private static async Task<ResponseResource> SendRequestMessage_Dictionary(this Source source, CqHttpRequest message)
+        {
             message.Echo = $"~{message.Task}@{Guid.NewGuid()}";
             var task = new TaskCompletionSource<ResponseResource>();
             if (ActionResource.Operations.TryAdd(message.Echo, task))
@@ -966,26 +990,21 @@ namespace cqhttp.WebSocketReverse.NETCore
                 if (api)
                 {
                     await conn.Send(JsonSerializer.Serialize(message, new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Default }));
-                    return await GetResult(message.Echo, task.Task, Timeout);
+                    bool received = await Task.WhenAny(task.Task, Task.Delay(Timeout)) == task.Task;
+                    ActionResource.Operations.TryRemove(message.Echo, out TaskCompletionSource<ResponseResource> _);
+                    if (received) return await task.Task;
                 }
             }
             return null;
         }
 
-        public static async Task<ResponseResource> GetResult(string echo, Task<ResponseResource> task, TimeSpan timeout)
-        {
-            bool received = await Task.WhenAny(task, Task.Delay(timeout)) == task;
-            ActionResource.Operations.TryRemove(echo, out TaskCompletionSource<ResponseResource> _);
-            if(received) return await task;
-            return null;
-        }
-
         public static void SetResult(string echo, ResponseResource result)
         {
-            if (ActionResource.Operations.TryGetValue(echo, out TaskCompletionSource<ResponseResource> r))
-            {
-                r.SetResult(result);
-            }
+            ActionResource.CQHTTPSubject.OnNext(Tuple.Create(echo, result));
+            //if (ActionResource.Operations.TryGetValue(echo, out TaskCompletionSource<ResponseResource> r))
+            //{
+            //    r.SetResult(result);
+            //}
         }
 
     }
