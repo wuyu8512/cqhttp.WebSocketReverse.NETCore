@@ -154,6 +154,7 @@ namespace cqhttp.WebSocketReverse.NETCore
                     case "ok":
                     case "async":
                         await (OnResponseAsync?.Invoke(source.SelfId, new ResponseEventArgs(source, response)) ?? Task.CompletedTask);
+                        if(response.Data.ValueKind != JsonValueKind.Null)
                         await ResponseParse(source, response.Echo, response.Data, data);
                         break;
                     case "failed":

@@ -33,7 +33,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="atSender">@发送者</param>
         public static async Task Replay(this Source source, string message, bool atSender = true)
         {
-            await SendRequestMessage(source, new CqHttpRequest()
+            await SendMessage(source, new CqHttpRequest()
             {
                 Task = RequestType.HandleQuickOperation,
                 Params = new HandleQuickOperationParams()
@@ -54,7 +54,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         public static async Task Ban(this Source source)
         {
-            await SendRequestMessage(source, new CqHttpRequest()
+            await SendMessage(source, new CqHttpRequest()
             {
                 Task = RequestType.HandleQuickOperation,
                 Params = new HandleQuickOperationParams()
@@ -74,7 +74,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         public static async Task Kick(this Source source)
         {
-            await SendRequestMessage(source, new CqHttpRequest()
+            await SendMessage(source, new CqHttpRequest()
             {
                 Task = RequestType.HandleQuickOperation,
                 Params = new HandleQuickOperationParams()
@@ -95,7 +95,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="remark">好友备注</param>
         public static async Task Approve(this Source source, string remark = "")
         {
-            await SendRequestMessage(source, new CqHttpRequest()
+            await SendMessage(source, new CqHttpRequest()
             {
                 Task = RequestType.HandleQuickOperation,
                 Params = new HandleQuickOperationParams()
@@ -117,7 +117,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="reson">拒绝理由</param>
         public static async Task Disapprove(this Source source, string reson = "")
         {
-            await SendRequestMessage(source, new CqHttpRequest()
+            await SendMessage(source, new CqHttpRequest()
             {
                 Task = RequestType.HandleQuickOperation,
                 Params = new HandleQuickOperationParams()
@@ -138,7 +138,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         public static async Task Delete(this Source source)
         {
-            await SendRequestMessage(source, new CqHttpRequest()
+            await SendMessage(source, new CqHttpRequest()
             {
                 Task = RequestType.HandleQuickOperation,
                 Params = new HandleQuickOperationParams()
@@ -157,7 +157,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="message">要发送的内容</param>
-        /// <param name="auto_escape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
+        /// <param name="autoEscape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
         public static async Task<int> SendMessage(this Source source, string message, bool autoEscape = false)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
@@ -949,8 +949,10 @@ namespace cqhttp.WebSocketReverse.NETCore
         private static async Task SendMessage(this Source source, CqHttpRequest message)
         {
             var api = source.ConnectionData.RoleAndConnections.TryGetValue("API", out Connection conn);
-            string jsonString = JsonSerializer.Serialize(message);
-            await conn.Send(jsonString);
+            if (api)
+            {
+                await conn.Send(JsonSerializer.Serialize(message, new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Default }));
+            }
         }
 
         /// <summary>
