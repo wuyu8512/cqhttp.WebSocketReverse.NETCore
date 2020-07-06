@@ -22,6 +22,6 @@ namespace cqhttp.WebSocketReverse.NETCore.Resource
         /// 响应主题
         /// </summary>
         public static readonly ISubject<Tuple<string, ResponseResource>, Tuple<string, ResponseResource>> CQHTTPSubject 
-            = new AsyncSubject<Tuple<string, ResponseResource>>();
+            = new Subject<Tuple<string, ResponseResource>>();
     }
 }

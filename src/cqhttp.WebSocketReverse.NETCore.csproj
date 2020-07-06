@@ -7,7 +7,7 @@
     <Authors>cqbef</Authors>
     <Company></Company>
     <Product></Product>
-	<Version>2.0.0</Version>
+	<Version>2.1.0</Version>
     <Description>基於CQHTTP插件的反向WebSocket通道提供服务端SDK层级的封装</Description>
     <Copyright>GPL-3.0</Copyright>
     <NoPackageAnalysis>true</NoPackageAnalysis>
