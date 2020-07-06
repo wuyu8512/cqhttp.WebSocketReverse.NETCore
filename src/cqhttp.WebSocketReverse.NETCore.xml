@@ -80,7 +80,7 @@
             </summary>
             <param name="source"></param>
             <param name="message">要发送的内容</param>
-            <param name="auto_escape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
+            <param name="autoEscape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
         </member>
         <member name="M:cqhttp.WebSocketReverse.NETCore.CqHttpApi.SendPrivateMessage(cqhttp.WebSocketReverse.NETCore.Model.Source,System.String,System.Int64,System.Boolean)">
             <summary>

@@ -966,10 +966,11 @@ namespace cqhttp.WebSocketReverse.NETCore
             var api = source.ConnectionData.RoleAndConnections.TryGetValue("API", out Connection conn);
             if (api)
             {
-                message.Echo = $"~{message.Task}@{Guid.NewGuid()}";
+                string echo = $"~{message.Task}@{Guid.NewGuid()}";
+                message.Echo = echo;
                 await conn.Send(JsonSerializer.Serialize(message, new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Default }));
                 return await ActionResource.CQHTTPSubject
-                    .Where(r => r.Item1 == message.Echo).Select(r => r.Item2).Take(1)
+                    .Where(r => r.Item1 == echo).Select(r => r.Item2).Take(1)
                     .Timeout(Timeout).Catch(Observable.Return<ResponseResource>(null)).ToTask();
             }
             return null;
