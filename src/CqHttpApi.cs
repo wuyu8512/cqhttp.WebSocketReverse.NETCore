@@ -31,7 +31,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         /// <param name="message">要发送的内容</param>
         /// <param name="atSender">@发送者</param>
-        public static async Task Replay(this Source source, string message, bool atSender = true)
+        public static async ValueTask Replay(this Source source, string message, bool atSender = true)
         {
             await SendMessage(source, new CqHttpRequest()
             {
@@ -52,7 +52,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 禁言对方(预设30分钟)
         /// </summary>
         /// <param name="source"></param>
-        public static async Task Ban(this Source source)
+        public static async ValueTask Ban(this Source source)
         {
             await SendMessage(source, new CqHttpRequest()
             {
@@ -72,7 +72,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 踢对方
         /// </summary>
         /// <param name="source"></param>
-        public static async Task Kick(this Source source)
+        public static async ValueTask Kick(this Source source)
         {
             await SendMessage(source, new CqHttpRequest()
             {
@@ -93,7 +93,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="remark">好友备注</param>
-        public static async Task Approve(this Source source, string remark = "")
+        public static async ValueTask Approve(this Source source, string remark = "")
         {
             await SendMessage(source, new CqHttpRequest()
             {
@@ -115,7 +115,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="reson">拒绝理由</param>
-        public static async Task Disapprove(this Source source, string reson = "")
+        public static async ValueTask Disapprove(this Source source, string reson = "")
         {
             await SendMessage(source, new CqHttpRequest()
             {
@@ -136,7 +136,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 撤回对方消息
         /// </summary>
         /// <param name="source"></param>
-        public static async Task Delete(this Source source)
+        public static async ValueTask Delete(this Source source)
         {
             await SendMessage(source, new CqHttpRequest()
             {
@@ -158,7 +158,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         /// <param name="message">要发送的内容</param>
         /// <param name="autoEscape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
-        public static async Task<int> SendMessage(this Source source, string message, bool autoEscape = false)
+        public static async ValueTask<int> SendMessage(this Source source, string message, bool autoEscape = false)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -188,7 +188,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="userId">对方 QQ 号</param>
         /// <param name="message">要发送的内容</param>
         /// <param name="auto_escape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
-        public static async Task<int> SendPrivateMessage(this Source source, string message, long userId = 0, bool autoEscape = false)
+        public static async ValueTask<int> SendPrivateMessage(this Source source, string message, long userId = 0, bool autoEscape = false)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -211,7 +211,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="groupId">群号</param>
         /// <param name="message">要发送的内容</param>
         /// <param name="auto_escape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
-        public static async Task<ResponseResource> SendGroupAnonymousMessage(this Source source, string message, long groupId = 0, bool autoEscape = false)
+        public static async ValueTask<ResponseResource> SendGroupAnonymousMessage(this Source source, string message, long groupId = 0, bool autoEscape = false)
         {
             return await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -233,7 +233,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="groupId">群号</param>
         /// <param name="message">要发送的内容</param>
         /// <param name="auto_escape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
-        public static async Task<ResponseResource> SendGroupMessage(this Source source, string message, long groupId = 0, bool autoEscape = false)
+        public static async ValueTask<ResponseResource> SendGroupMessage(this Source source, string message, long groupId = 0, bool autoEscape = false)
         {
             return await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -255,7 +255,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="discussId">讨论组 ID（正常情况下看不到，需要从讨论组消息上报的数据中获得）</param>
         /// <param name="message">要发送的内容</param>
         /// <param name="auto_escape">消息内容是否作为纯文本发送（即不解析 CQ 码），</param>
-        public static async Task<ResponseResource> SendDiscussMessage(this Source source, string message, long discussId = 0, bool autoEscape = false)
+        public static async ValueTask<ResponseResource> SendDiscussMessage(this Source source, string message, long discussId = 0, bool autoEscape = false)
         {
             return await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -275,7 +275,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="messageId">消息 ID</param>
-        public static async Task DeleteMessage(this Source source, int messageId)
+        public static async ValueTask DeleteMessage(this Source source, int messageId)
         {
             await SendMessage(source, new CqHttpRequest()
             {
@@ -293,7 +293,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         /// <param name="userId">对方 QQ 号</param>
         /// <param name="times">赞的次数，每个好友每天最多 10 次</param>
-        public static async Task SendLike(this Source source, long? userId = null, byte times = 1)
+        public static async ValueTask SendLike(this Source source, long? userId = null, byte times = 1)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -313,7 +313,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="groupId">群号</param>
         /// <param name="userId">要踢的 QQ 号</param>
         /// <param name="rejectAddRequest">拒绝此人的加群请求</param>
-        public static async Task SetGroupKick(this Source source, long? groupId = null, long? userId = null, bool rejectAddRequest = false)
+        public static async ValueTask SetGroupKick(this Source source, long? groupId = null, long? userId = null, bool rejectAddRequest = false)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -333,7 +333,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         /// <param name="groupId">群号</param>
         /// <param name="duration">禁言时长，单位秒，0 表示取消禁言</param>
-        public static async Task SetGroupBan(this Source source, long? groupId = null, int duration = 1800)
+        public static async ValueTask SetGroupBan(this Source source, long? groupId = null, int duration = 1800)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -353,7 +353,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="groupId">群号</param>
         /// <param name="flag">要禁言的匿名用户的 flag（需从群消息上报的数据中获得）</param>
         /// <param name="duration">禁言时长，单位秒，0 表示取消禁言</param>
-        public static async Task SetGroupAnonymousBan(this Source source, string flag, long? groupId = null, int duration = 1800)
+        public static async ValueTask SetGroupAnonymousBan(this Source source, string flag, long? groupId = null, int duration = 1800)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -374,7 +374,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="groupId">群号</param>
         /// <param name="enable">是否禁言</param>
         /// <returns></returns>
-        public static async Task SetGroupWholeBan(this Source source, long? groupId = null, bool enable = true)
+        public static async ValueTask SetGroupWholeBan(this Source source, long? groupId = null, bool enable = true)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -395,7 +395,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="userId">要设置管理员的 QQ 号</param>
         /// <param name="enable">true 为设置，false 为取消</param>
         /// <returns></returns>
-        public static async Task SetGroupAdmin(this Source source, long? groupId, long? userId = null, bool enable = true)
+        public static async ValueTask SetGroupAdmin(this Source source, long? groupId, long? userId = null, bool enable = true)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -416,7 +416,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="groupId">群号</param>
         /// <param name="enable">是否允许匿名聊天</param>
         /// <returns></returns>
-        public static async Task SetGroupAnonymous(this Source source, long? groupId = null, bool enable = true)
+        public static async ValueTask SetGroupAnonymous(this Source source, long? groupId = null, bool enable = true)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -437,7 +437,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="userId">要设置的 QQ 号</param>
         /// <param name="card">群名片内容，不填或空字符串表示删除群名片</param>
         /// <returns></returns>
-        public static async Task SetGroupAnonymous(this Source source, string card, long? groupId = null, long? userId = null)
+        public static async ValueTask SetGroupAnonymous(this Source source, string card, long? groupId = null, long? userId = null)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -458,7 +458,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="groupId">群号</param>
         /// <param name="isDismiss">是否解散，如果登录号是群主，则仅在此项为 true 时能够解散</param>
         /// <returns></returns>
-        public static async Task SetGroupLeave(this Source source, long? groupId = null, bool isDismiss = false)
+        public static async ValueTask SetGroupLeave(this Source source, long? groupId = null, bool isDismiss = false)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -480,7 +480,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="specialTitle">专属头衔，不填或空字符串表示删除专属头衔</param>
         /// <param name="duration">专属头衔有效期，单位秒，-1 表示永久，不过此项似乎没有效果，可能是只有某些特殊的时间长度有效，有待测试</param>
         /// <returns></returns>
-        public static async Task SetGroupLeave(this Source source, long groupId, long userId, string specialTitle, int duration = -1)
+        public static async ValueTask SetGroupLeave(this Source source, long groupId, long userId, string specialTitle, int duration = -1)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -501,7 +501,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         /// <param name="discussId">讨论组 ID（正常情况下看不到，需要从讨论组消息上报的数据中获得）</param>
         /// <returns></returns>
-        public static async Task SetGroupLeave(this Source source, long? discussId = null)
+        public static async ValueTask SetGroupLeave(this Source source, long? discussId = null)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -521,7 +521,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="approve">是否同意请求</param>
         /// <param name="remark">添加后的好友备注（仅在同意时有效）</param>
         /// <returns></returns>
-        public static async Task SetGroupLeave(this Source source, string flag, bool approve = true, string remark = "")
+        public static async ValueTask SetGroupLeave(this Source source, string flag, bool approve = true, string remark = "")
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -544,7 +544,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="approve">是否同意请求</param>
         /// <param name="reason">拒绝理由（仅在拒绝时有效）</param>
         /// <returns></returns>
-        public static async Task SetGroupLeave(this Source source, string flag, GroupRequestType type, bool approve = true, string reason = "")
+        public static async ValueTask SetGroupLeave(this Source source, string flag, GroupRequestType type, bool approve = true, string reason = "")
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -563,7 +563,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 获取登录号信息
         /// </summary>
         /// <param name="source"></param>
-        public static async Task<LoginInfo> GetLoginInfo(this Source source)
+        public static async ValueTask<LoginInfo> GetLoginInfo(this Source source)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -578,7 +578,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         /// <param name="userId">QQ 号</param>
         /// <param name="noCache">是否不使用缓存（使用缓存可能更新不及时，但响应更快）</param>
-        public static async Task<QQInfo> GetStrangerInfo(this Source source, long? userId = null, bool noCache = false)
+        public static async ValueTask<QQInfo> GetStrangerInfo(this Source source, long? userId = null, bool noCache = false)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -596,7 +596,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 获取群列表
         /// </summary>
         /// <param name="source"></param>
-        public static async Task<IList<Group>> GetGroupList(this Source source)
+        public static async ValueTask<IList<Group>> GetGroupList(this Source source)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -612,7 +612,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="groupId">群号</param>
         /// <param name="userId">QQ号</param>
         /// <param name="noCache">是否不使用缓存（使用缓存可能更新不及时，但响应更快）</param>
-        public static async Task<GroupMemberInfo> GetGroupMemberInfo(this Source source, long? groupId = null, long? userId = null, bool noCache = false)
+        public static async ValueTask<GroupMemberInfo> GetGroupMemberInfo(this Source source, long? groupId = null, long? userId = null, bool noCache = false)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -632,7 +632,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="groupId">群号</param>
-        public static async Task<IList<GroupMemberInfo>> GetGroupMemberList(this Source source, long? groupId = null)
+        public static async ValueTask<IList<GroupMemberInfo>> GetGroupMemberList(this Source source, long? groupId = null)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -650,7 +650,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="domain">需要获取 cookies 的域名</param>
-        public static async Task<string> GetCookies(this Source source, string domain = "qq.com")
+        public static async ValueTask<string> GetCookies(this Source source, string domain = "qq.com")
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -667,7 +667,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 获取 CSRF Token
         /// </summary>
         /// <param name="source"></param>
-        public static async Task<int> GetCsrfToken(this Source source)
+        public static async ValueTask<int> GetCsrfToken(this Source source)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -680,7 +680,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 获取 QQ 相关接口凭证
         /// </summary>
         /// <param name="source"></param>
-        public static async Task<Credentials> GetCredentials(this Source source)
+        public static async ValueTask<Credentials> GetCredentials(this Source source)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -698,7 +698,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="file">收到的语音文件名</param>
         /// <param name="outFormat">要转换到的格式，目前支持 mp3、amr、wma、m4a、spx、ogg、wav、flac</param>
         /// <param name="fullPath">是否返回文件的绝对路径（Windows 环境下建议使用，Docker 中不建议）</param>
-        public static async Task<FileInfo> GetRecord(this Source source, string file, string outFormat, bool fullPath = false)
+        public static async ValueTask<FileInfo> GetRecord(this Source source, string file, string outFormat, bool fullPath = false)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -718,7 +718,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="file">收到的语音文件名</param>
-        public static async Task<FileInfo> GetRecord(this Source source, string file)
+        public static async ValueTask<FileInfo> GetRecord(this Source source, string file)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -735,7 +735,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 检查是否可以发送图片
         /// </summary>
         /// <param name="source"></param>
-        public static async Task<bool> CanSendImage(this Source source)
+        public static async ValueTask<bool> CanSendImage(this Source source)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -748,7 +748,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 检查是否可以发送语音
         /// </summary>
         /// <param name="source"></param>
-        public static async Task<bool> CanSendRecord(this Source source)
+        public static async ValueTask<bool> CanSendRecord(this Source source)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -761,7 +761,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 获取插件运行状态
         /// </summary>
         /// <param name="source"></param>
-        public static async Task<CqHttpStatus> GetStatus(this Source source)
+        public static async ValueTask<CqHttpStatus> GetStatus(this Source source)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -774,7 +774,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 获取酷 Q 及 HTTP API 插件的版本信息
         /// </summary>
         /// <param name="source"></param>
-        public static async Task<CqHttpVersion> GetVersionInfo(this Source source)
+        public static async ValueTask<CqHttpVersion> GetVersionInfo(this Source source)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -790,7 +790,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="cleanLog">是否在重启时清空酷 Q 的日志数据库（logv1.db）</param>
         /// <param name="cleanCache">是否在重启时清空酷 Q 的缓存数据库（cache.db）</param>
         /// <param name="cleanEvent">是否在重启时清空酷 Q 的事件数据库（eventv2.db）</param>
-        public static async Task SetRestart(this Source source, bool cleanLog = false, bool cleanCache = false, bool cleanEvent = false)
+        public static async ValueTask SetRestart(this Source source, bool cleanLog = false, bool cleanCache = false, bool cleanEvent = false)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -808,7 +808,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 重启 HTTP API 插件
         /// </summary>
         /// <param name="source"></param>
-        public static async Task SetRestartPlugin(this Source source, int delay = 1)
+        public static async ValueTask SetRestartPlugin(this Source source, int delay = 1)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -826,7 +826,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="data_dir">收到清理的目录名，支持 image、record、show、bface</param>
-        public static async Task CleanDataDir(this Source source, string data_dir)
+        public static async ValueTask CleanDataDir(this Source source, string data_dir)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -842,7 +842,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// 用于清空插件的日志文件。
         /// </summary>
         /// <param name="source"></param>
-        public static async Task CleanPluginLog(this Source source)
+        public static async ValueTask CleanPluginLog(this Source source)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -855,7 +855,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="flat">是否获取扁平化的好友数据，即所有好友放在一起、所有分组放在一起，而不是按分组层级</param>
-        public static async Task<IList<FriendGroup>> GetFriendList(this Source source, bool flat = false)
+        public static async ValueTask<IList<FriendGroup>> GetFriendList(this Source source, bool flat = false)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -873,7 +873,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="groupId">要查询的群号</param>
-        public static async Task<Group> GetGroupInfo(this Source source, long? groupId = null)
+        public static async ValueTask<Group> GetGroupInfo(this Source source, long? groupId = null)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -891,7 +891,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="userId">要查询的 QQ 号</param>
-        public static async Task<QQInfo> GetVipInfo(this Source source, long? userId = null)
+        public static async ValueTask<QQInfo> GetVipInfo(this Source source, long? userId = null)
         {
             var result = await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -909,7 +909,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// </summary>
         /// <param name="source"></param>
         /// <param name="automatic">是否自动进行，如果为 true，将不会弹窗提示，而仅仅输出日志，同时如果 auto_perform_update 为 true，则会自动更新并重启酷 Q</param>
-        public static async Task CheckUpdate(this Source source, bool automatic = false)
+        public static async ValueTask CheckUpdate(this Source source, bool automatic = false)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {
@@ -927,7 +927,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         /// <param name="remark"></param>
         /// <returns></returns>
-        public static async Task HandleQuickOperation(this Source source, string context, QuickOperation operation)
+        public static async ValueTask HandleQuickOperation(this Source source, string context, QuickOperation operation)
         {
             await SendRequestMessage(source, new CqHttpRequest()
             {

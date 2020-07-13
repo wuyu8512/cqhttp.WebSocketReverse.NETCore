@@ -89,7 +89,7 @@ namespace cqhttp.WebSocketReverse.NETCore
     }
     public class WebSocketServer : IDisposable
     {
-        public delegate Task AsyncEventHandler<TEventArgs>(object sender, TEventArgs e) where TEventArgs : EventArgs;
+        public delegate ValueTask AsyncEventHandler<TEventArgs>(object sender, TEventArgs e) where TEventArgs : EventArgs;
         private readonly Fleck.WebSocketServer Server = null;
         /// <summary>
         /// 加强认证核对级别

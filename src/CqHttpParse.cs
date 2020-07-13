@@ -87,7 +87,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="selfId">消息来源</param>
         /// <param name="pack">消息封装</param>
         /// <returns></returns>
-        public async Task Parse(object selfId, MessageEventArgs pack)
+        public async ValueTask Parse(object selfId, MessageEventArgs pack)
         {
             try
             {
@@ -143,7 +143,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         /// <param name="element"></param>
         /// <returns></returns>
-        private async Task<ResponseResource> ParseResponse(Source source, JsonElement element)
+        private async ValueTask<ResponseResource> ParseResponse(Source source, JsonElement element)
         {
             try
             {
@@ -180,7 +180,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="jData"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private async Task<ResponseResource> ResponseParse(Source source, string echo, JsonElement jData, ResponseResource data)
+        private async ValueTask<ResponseResource> ResponseParse(Source source, string echo, JsonElement jData, ResponseResource data)
         {
             return await Task.Run(async () =>
             {
