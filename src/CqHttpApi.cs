@@ -31,7 +31,7 @@ namespace cqhttp.WebSocketReverse.NETCore
         /// <param name="source"></param>
         /// <param name="message">要发送的内容</param>
         /// <param name="atSender">@发送者</param>
-        public static async ValueTask Replay(this Source source, string message, bool atSender = true)
+        public static async ValueTask Reply(this Source source, string message, bool atSender = true)
         {
             await SendMessage(source, new CqHttpRequest()
             {

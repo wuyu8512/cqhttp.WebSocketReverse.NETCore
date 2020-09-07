@@ -40,7 +40,7 @@ parse.OnPrivateMessageAsync += async (n, b) =>
    {
       long qqId = 123456789;
       int messageId = await b.Source.SendPrivateMessage($"{b.Sender.NickName}对你说:{b.Message}",qqId);
-      if(messageId>0)await b.Source.Replay("已传达消息到主人");
+      if(messageId>0)await b.Source.Reply("已传达消息到主人");
    }
 };
 

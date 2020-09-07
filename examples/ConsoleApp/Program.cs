@@ -69,7 +69,7 @@
                 currentReceive.Add(Tuple.Create(ConsoleColor.Black, ConsoleColor.Yellow, $"({b.MessageId})"));
                 blockingCollection.Add(currentReceive);
 
-                await b.Source.Replay(b.Message);
+                await b.Source.Reply(b.Message);
 
                 Interlocked.Increment(ref countReply);
                 List<Tuple<ConsoleColor, ConsoleColor, string>> currentReply = new List<Tuple<ConsoleColor, ConsoleColor, string>>();
